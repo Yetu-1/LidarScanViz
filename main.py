@@ -1,5 +1,6 @@
 import serial
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from math import cos, sin, radians
 
 # Setting up serial port
@@ -8,7 +9,21 @@ ser.baudrate = 115200
 ser.port = '/dev/tty.usbserial-0001'
 ser.timeout = 2
 ser.open() # Open serial port
-show_flag = True
+max_distance = 1000
+
+# plot variables and parameters
+fig = plt.figure()
+ax = plt.gca()
+sc = ax.scatter([], [], s=3)
+ax.set_aspect('equal')
+ax.set_xlim(-max_distance, max_distance)
+ax.set_ylim(-max_distance, max_distance)
+
+plt.title("RPLidar Scan Plot")
+plt.xlabel("X (mm)")
+plt.ylabel("Y (mm)")
+plt.grid(True)
+
 
 def send_scan_request():
     print("Sending Scan Request...")
@@ -41,20 +56,18 @@ def find_valid_sample(byte1, byte2, byte3, byte4, byte5):
         return byte1, byte2, byte3, byte4, byte5
     else:
         # check if they are the same value
-        extra_byte = ser.read(1)
+        extra_byte = ser.read(1)[0] # Get first element so that variable is of type int and not type bytes
         if not extra_byte:
             print("ERROR READING EXTRA BYTE")
         return find_valid_sample(byte2, byte3, byte4, byte5, extra_byte) # shift the sample frame by one byte
 
-def iterate_scans(show_flag):
+def iterate_scans():
     scan_data = []
     for (new_scan, angle, distance) in iterate_measurements():
         if(new_scan == True):
             print("NEW 360 DEGREES SCAN SWEEP")
             print(scan_data) # or yield scancle
-            if show_flag == True:
-                plot_map(scan_data)
-                show_flag = False
+            yield scan_data
             scan_data = []
         scan_data.append((new_scan, angle, distance))
 
@@ -72,19 +85,14 @@ def convert_polar_to_cartesian(frame_data):
         
     return x_vals, y_vals
 
-def plot_map(scan_data):
-    x_vals = []
-    y_vals = []
+def update_frame(frame_data):
+    x_vals, y_vals = convert_polar_to_cartesian(frame_data)
+    sc.set_offsets(list(zip(x_vals, y_vals)))
+    return sc,
 
-    x_vals, y_vals = convert_polar_to_cartesian(scan_data)
+def plot_map(): # run animation
 
-    plt.figure()
-    plt.scatter(x_vals, y_vals, s=1)
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.title("RPLidar Scan Plot")
-    plt.xlabel("X (mm)")
-    plt.ylabel("Y (mm)")
-    plt.grid(True)
+    ani = FuncAnimation(fig, update_frame, frames=iterate_scans, interval=50, blit=True)
     plt.show()
 
-iterate_scans(True)
+plot_map();
