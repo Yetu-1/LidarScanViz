@@ -17,7 +17,7 @@ def iterate_measurements():
 
     while True:
         # Read sample
-        byte1, byte2, byte3, byte4, byte5 = read_sample()
+        byte1, byte2, byte3, byte4, byte5 = find_valid_sample(*ser.read(5));
         # Process sample
         new_scan = byte1 & 0x01
         print(byte3)
@@ -26,10 +26,6 @@ def iterate_measurements():
         distance = ((byte5 << 8) | byte4) / 4.0
 
         yield(new_scan, angle, distance)
-def read_sample():
-    byte1, byte2, byte3, byte4, byte5 = ser.read(5)
-    byte1, byte2, byte3, byte4, byte5 = find_valid_sample(byte1, byte2, byte3, byte4, byte5);
-    return byte1, byte2, byte3, byte4, byte5;
 
 def find_valid_sample(byte1, byte2, byte3, byte4, byte5):
     # Extract check bits
