@@ -2,6 +2,7 @@ import serial
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from math import cos, sin, radians
+import numpy as np
 
 # Setting up serial port
 ser = serial.Serial()
@@ -14,7 +15,7 @@ max_distance = 1000
 # plot variables and parameters
 fig = plt.figure()
 ax = plt.gca()
-sc = ax.scatter([], [], s=3)
+sc = ax.scatter([], [], c=[], s=3)
 ax.set_aspect('equal')
 ax.set_xlim(-max_distance, max_distance)
 ax.set_ylim(-max_distance, max_distance)
@@ -74,6 +75,7 @@ def iterate_scans():
 def convert_polar_to_cartesian(frame_data):
     x_vals = []
     y_vals = []
+    distance_vals = []
 
     # convert polar cartesian cordinates to vectors
     for (new_scan, angle, distance) in frame_data:
@@ -82,12 +84,14 @@ def convert_polar_to_cartesian(frame_data):
         y = distance * sin(angle_rad)
         x_vals.append(x)
         y_vals.append(y)
+        distance_vals.append(distance)
         
-    return x_vals, y_vals
+    return x_vals, y_vals, distance_vals
 
 def update_frame(frame_data):
-    x_vals, y_vals = convert_polar_to_cartesian(frame_data)
-    sc.set_offsets(list(zip(x_vals, y_vals)))
+    x_vals, y_vals, dist_vals = convert_polar_to_cartesian(frame_data)
+    sc.set_offsets(np.column_stack((x_vals, y_vals)))
+    sc.set_array(dist_vals)
     return sc,
 
 def plot_map(): # run animation
