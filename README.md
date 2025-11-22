@@ -1,2 +1,2 @@
 # LidarScanViz
-A simple lidar visualization project
+A simple lidar visualization project for rplidar
